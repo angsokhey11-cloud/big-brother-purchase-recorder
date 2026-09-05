@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BIG BROTHER — Create Purchase</title>
+<title>BIG BROTHER — Create Purchase V1.4</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f7fb;color:#1f2937;font-family:Inter,Arial,sans-serif}
@@ -40,7 +40,7 @@ button{cursor:pointer;font-weight:800;border-radius:8px;padding:10px 14px}
   <div class="top">
     <div>
       <h1>Create Purchase</h1>
-      <div class="sub">BIG BROTHER — Purchase Generator</div>
+      <div class="sub">BIG BROTHER — Purchase Generator V1.4</div>
     </div>
     <button class="secondary" onclick="resetPurchase()">New Purchase</button>
   </div>
@@ -54,7 +54,7 @@ button{cursor:pointer;font-weight:800;border-radius:8px;padding:10px 14px}
       <div><label>Client / Supplier *</label><select id="client" onchange="clientChanged()"></select></div>
       <div><label>Currency</label><input id="currency" readonly value="USD"></div>
 
-      <div><label>Client Code</label><input id="clientCode" readonly></div>
+      <div><label>Client Invoice Number *</label><input id="clientInvoiceNumber" placeholder="Enter Client Invoice Number"></div>
       <div><label>Payment Term</label><input id="paymentTerm" readonly></div>
       <div><label>Purchaser *</label><select id="purchaser" onchange="syncPurchaser()"></select></div>
       <div><label>Purchaser Staff ID</label><input id="purchaserId" readonly></div>
@@ -114,12 +114,48 @@ function money(n){return Number(n||0).toLocaleString("en-US",{minimumFractionDig
 function setStatus(msg,type=""){const el=document.getElementById("status");el.textContent=msg;el.className="status"+(type?" "+type:"");}
 function purchaseApiReady(){return PURCHASE_DATABASE_API_URL.startsWith("https://script.google.com/");}
 
-async function getJson(url,params={}){
-  const u=new URL(url);
-  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
-  const r=await fetch(u);
-  if(!r.ok)throw new Error("HTTP "+r.status);
-  return r.json();
+function getJson(url, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      "bbJsonp_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+
+    const script = document.createElement("script");
+    let finished = false;
+
+    const cleanup = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
+      script.remove();
+    };
+
+    window[callbackName] = function(data) {
+      cleanup();
+      resolve(data);
+    };
+
+    const u = new URL(url);
+    Object.entries(params || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) u.searchParams.set(k, v);
+    });
+    u.searchParams.set("callback", callbackName);
+    u.searchParams.set("_t", Date.now());
+
+    script.src = u.toString();
+    script.async = true;
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Could not load data from database."));
+    };
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("Database request timed out."));
+    }, 15000);
+
+    document.head.appendChild(script);
+  });
 }
 function arrayOf(res){if(Array.isArray(res))return res;if(Array.isArray(res?.data))return res.data;return [];}
 function postForm(url,action,fieldName,data){
@@ -137,10 +173,19 @@ function postForm(url,action,fieldName,data){
 
 async function loadMasterData(){
   try{
+    setStatus("Loading Client and Staff data...");
     const [c,s] = await Promise.all([
       getJson(MASTER_DATABASE_API_URL,{action:"getClients"}),
       getJson(STAFF_DATABASE_API_URL,{action:"getStaff",includeInactive:"false"})
     ]);
+
+    if (!Array.isArray(c) && !Array.isArray(c?.data)) {
+      const msg = c?.message || c?.error || "getClients API is not available.";
+      throw new Error(
+        "Master Database Web App is not serving Client data yet. " +
+        "Update/deploy Master Database V6.1. Response: " + msg
+      );
+    }
 
     clients=arrayOf(c);
     staff=arrayOf(s);
@@ -149,6 +194,13 @@ async function loadMasterData(){
       '<option value="">Select Client / Supplier</option>'+
       clients.map((x,i)=>`<option value="${i}">${esc(x.clientName)}${x.clientCode?` — ${esc(x.clientCode)}`:""}</option>`).join("");
 
+    if (!clients.length) {
+      setStatus(
+        "Client API is connected, but there are 0 active Clients. Enter Client Name in the Clients sheet and run setupPurchaseClientDatabase() once.",
+        ""
+      );
+    }
+
     let purchasers=staff.filter(x=>String(x.position||"").toLowerCase().includes("purchas"));
     if(!purchasers.length)purchasers=staff;
 
@@ -156,9 +208,16 @@ async function loadMasterData(){
       '<option value="">Select Purchaser</option>'+
       purchasers.map(x=>`<option value="${esc(x.staffId)}" data-name="${esc(x.staffName)}">${esc(x.staffName)} — ${esc(x.staffId)}</option>`).join("");
 
+    if (clients.length) {
+      setStatus(
+        clients.length + " Client(s) and " + purchasers.length + " Purchaser/Staff record(s) loaded.",
+        "success"
+      );
+    }
+
   }catch(e){
     console.error(e);
-    setStatus("Could not load Client / Staff Master Data. Deploy Master Database V6 first.");
+    setStatus("Could not load Client / Staff data: " + (e.message || "Database connection error."));
   }
 }
 
@@ -169,7 +228,6 @@ async function clientChanged(){
   items=[];
   renderItems();
 
-  document.getElementById("clientCode").value=c?.clientCode||"";
   document.getElementById("paymentTerm").value=c?.paymentTerm||"";
   document.getElementById("currency").value=c?.currency||"USD";
 
@@ -293,6 +351,7 @@ async function savePurchase(){
   const purchaserName=purchaserEl.options[purchaserEl.selectedIndex]?.dataset?.name||"";
 
   if(!client)return alert("Select a Client / Supplier.");
+  if(!document.getElementById("clientInvoiceNumber").value.trim())return alert("Enter Client Invoice Number.");
   if(!items.length)return alert("Add at least one product.");
   if(!purchaserEl.value)return alert("Select Purchaser.");
 
@@ -302,6 +361,7 @@ async function savePurchase(){
     clientId:client.clientId,
     clientName:client.clientName,
     clientCode:client.clientCode||"",
+    clientInvoiceNumber:document.getElementById("clientInvoiceNumber").value.trim(),
     currency:document.getElementById("currency").value||"USD",
     paymentTerm:client.paymentTerm||"",
     purchaserStaffId:purchaserEl.value,
@@ -336,7 +396,7 @@ function resetPurchase(){
   items=[];
   catalog=[];
   document.getElementById("client").value="";
-  document.getElementById("clientCode").value="";
+  document.getElementById("clientInvoiceNumber").value="";
   document.getElementById("paymentTerm").value="";
   document.getElementById("currency").value="USD";
   document.getElementById("product").innerHTML='<option value="">Select Product</option>';
