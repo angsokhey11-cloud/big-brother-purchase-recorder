@@ -1,2 +1,2720 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BIG BROTHER — Purchase Recorder Supabase DEV</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#1f2937;font-family:Inter,Arial,sans-serif}:root{--blue:#174a91;--line:#dce4ee;--muted:#6b7280;--green:#157a51}.page{max-width:1500px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}h1{margin:0;color:var(--blue);font-size:28px}.sub{font-size:13px;color:var(--muted);margin-top:5px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 3px 14px #173a6610;padding:17px;margin-bottom:15px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}label{display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:6px}input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:10px 11px;font:inherit;background:#fff}textarea{min-height:72px}.section-title{font-weight:900;color:#22354d;font-size:16px;margin-bottom:12px}.status{background:#eef4fb;border:1px solid #d9e5f3;color:#405d7d;padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:12px}.status.success{background:#eef9f3;border-color:#c9ead9;color:#176c4a}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:950px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);font-size:12px;text-align:left}th{background:#f8fafc;color:#475569}td input{padding:8px}.addline{display:grid;grid-template-columns:2fr .8fr 1fr 1fr auto;gap:9px;align-items:end;margin-bottom:12px}button{cursor:pointer;font-weight:800;border-radius:8px;padding:10px 14px}.primary{border:0;background:var(--blue);color:#fff}.secondary{border:1px solid var(--line);background:#fff;color:#334155}.danger{border:0;background:#fff0f0;color:#a62f2f}.actions{display:flex;justify-content:flex-end;gap:9px;margin-top:14px}.summary{margin-left:auto;width:min(420px,100%);margin-top:12px}.srow{display:flex;justify-content:space-between;gap:20px;padding:7px 0;border-bottom:1px dashed #d7dee8}.srow.total{font-size:18px;font-weight:900;color:var(--blue);border-bottom:0}.small{font-size:11px;color:var(--muted)}.pill{display:inline-block;padding:7px 10px;border-radius:999px;background:#e8f7ef;color:#168652;font-weight:900;font-size:11px}@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.addline{grid-template-columns:1fr 1fr}}@media(max-width:600px){.grid,.addline{grid-template-columns:1fr}.page{padding:12px}}</style></head><body><div class="page"><div class="top"><div><h1>Create Purchase</h1><div class="sub">BIG BROTHER — Supabase DEV</div></div><div><span class="pill">Secure Supabase DEV</span> <button class="secondary" id="newBtn">New Purchase</button></div></div><div class="card"><div class="section-title">Purchase Information</div><div id="status" class="status">Connecting to Supabase...</div><div class="grid"><div><label>Purchase ID</label><input id="purchaseId" readonly></div><div><label>Purchase Date *</label><input id="purchaseDate" type="date"></div><div><label>Client / Supplier *</label><select id="client"></select></div><div><label>Currency</label><input id="currency" readonly value="USD"></div><div><label>Client Invoice Number *</label><input id="clientInvoiceNumber"></div><div><label>Payment Term</label><input id="paymentTerm" readonly></div><div><label>Purchaser *</label><select id="purchaser"></select></div><div><label>Payment Type *</label><select id="paymentType"><option>Credit</option><option>Paid</option></select></div></div></div><div class="card"><div class="section-title">Products</div><div class="addline"><div><label>Product</label><select id="product"></select></div><div><label>Qty</label><input id="qty" type="number" min="0" step="0.01"></div><div><label>Unit Price</label><input id="price" type="number" min="0" step="0.0001"></div><div><label>Unit</label><input id="unit" readonly></div><button class="primary" id="addBtn">+ Add</button></div><div class="tablewrap"><table><thead><tr><th>No.</th><th>Product</th><th>Code</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Amount</th><th></th></tr></thead><tbody id="itemsBody"></tbody></table></div><div class="summary"><div class="srow"><span>Subtotal</span><strong id="subtotal">0.00</strong></div><div class="srow"><span>Discount</span><span><input id="discount" type="number" min="0" step="0.01" value="0" style="width:130px;text-align:right"></span></div><div class="srow total"><span>Grand Total</span><span id="grandTotal">0.00</span></div></div></div><div class="card"><div class="section-title">Payment</div><div class="grid"><div><label>Payment Type</label><input id="paymentTypeDisplay" readonly></div><div><label>Amount Paid</label><input id="amountPaidDisplay" readonly></div><div><label>Payable</label><input id="payableDisplay" readonly></div><div><label>Payment Status</label><input id="paymentStatusDisplay" readonly></div></div></div><div class="card"><div class="section-title">Note</div><textarea id="note"></textarea><div class="actions"><button class="secondary" id="clearBtn">Clear</button><button class="primary" id="saveBtn">Complete Purchase</button></div></div></div><script>'use strict';const URL='https://sjfhlaclgmkwwofzstok.supabase.co',KEY='sb_publishable_w762jR65CWwlO30fKQsYOw_6L9grx8S',SESSION_KEY='BB_SUPABASE_DEV_SESSION_V1';let session=null,clients=[],staff=[],catalog=[],items=[];const $=id=>document.getElementById(id),num=v=>Number.isFinite(Number(v))?Number(v):0,esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}function money(n){return num(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}function status(t,ok=false){$('status').textContent=t;$('status').className='status'+(ok?' success':'')}function readSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch(e){return null}}function saveSession(s){session=s;if(!s)localStorage.removeItem(SESSION_KEY);else{if(!s.expires_at&&s.expires_in)s.expires_at=Math.floor(Date.now()/1000)+Number(s.expires_in);localStorage.setItem(SESSION_KEY,JSON.stringify(s))}}async function parse(r){const t=await r.text();let d={};try{d=t?JSON.parse(t):{}}catch(e){d={message:t}}if(!r.ok)throw new Error(d.message||d.error_description||d.error||'Request failed');return d}async function refresh(){const s=readSession();if(!s?.refresh_token)throw new Error('Please sign in from Clients Editor first.');const r=await fetch(URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});saveSession(await parse(r))}async function ensure(){session=readSession();if(!session?.access_token)throw new Error('Please sign in from Clients Editor first.');if(session.expires_at&&session.expires_at<Math.floor(Date.now()/1000)+30)await refresh()}async function rpc(fn,args={}){await ensure();const r=await fetch(URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(args)});return parse(r)}function renderBootstrap(d){clients=d.clients||[];staff=d.staff||[];$('purchaseId').value=d.nextPurchaseId||'';$('client').innerHTML='<option value="">Select Client / Supplier</option>'+clients.map(x=>`<option value="${esc(x.clientId)}">${esc(x.clientName)}${x.clientCode?' — '+esc(x.clientCode):''}</option>`).join('');let p=staff.filter(x=>String(x.position||'').toLowerCase().includes('purchas'));if(!p.length)p=staff;$('purchaser').innerHTML='<option value="">Select Purchaser</option>'+p.map(x=>`<option value="${esc(x.staffId)}">${esc(x.staffName)} — ${esc(x.staffId)}</option>`).join('');status(`${clients.length} Clients and ${p.length} Purchaser/Staff records ready.`,true)}async function load(){try{renderBootstrap(await rpc('bb_purchase_bootstrap'))}catch(e){status(e.message)}renderItems()}async function clientChanged(){const id=$('client').value;catalog=[];$('product').innerHTML='<option value="">Select Product</option>';if(!id){$('currency').value='USD';$('paymentTerm').value='';return}try{const d=await rpc('bb_purchase_client_catalog',{p_client_id:id});catalog=d.products||[];$('currency').value=d.client.currency||'USD';$('paymentTerm').value=d.client.paymentTerm||'';$('product').innerHTML='<option value="">Select Product</option>'+catalog.map(x=>`<option value="${esc(x.productCode)}">${esc(x.productName)} — ${esc(x.productCode)}</option>`).join('');status(`${catalog.length} products loaded for ${d.client.clientName}.`,true)}catch(e){status(e.message)}}function productChanged(){const x=catalog.find(v=>v.productCode===$('product').value);$('price').value=x?num(x.purchasePrice):'';$('unit').value=x?x.unit||'':''}function addItem(){const x=catalog.find(v=>v.productCode===$('product').value),q=num($('qty').value),p=num($('price').value);if(!x||q<=0)return alert('Select a product and enter Qty.');const found=items.find(v=>v.productCode===x.productCode);if(found){found.qty+=q;found.unitPrice=p}else items.push({productCode:x.productCode,productName:x.productName,qty:q,unit:x.unit||'',unitPrice:p});$('qty').value='';renderItems()}function renderItems(){const b=$('itemsBody');b.innerHTML=items.length?items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.productName)}</td><td>${esc(x.productCode)}</td><td>${money(x.qty)}</td><td>${esc(x.unit)}</td><td>${money(x.unitPrice)}</td><td>${money(x.qty*x.unitPrice)}</td><td><button class="danger" data-i="${i}">Remove</button></td></tr>`).join(''):'<tr><td colspan="8" class="small">No purchase items yet.</td></tr>';const sub=items.reduce((s,x)=>s+x.qty*x.unitPrice,0),disc=Math.max(0,Math.min(sub,num($('discount').value))),grand=Math.max(0,sub-disc),type=$('paymentType').value,paid=type==='Paid'?grand:0,pay=type==='Paid'?0:grand;$('subtotal').textContent=money(sub);$('grandTotal').textContent=money(grand);$('paymentTypeDisplay').value=type;$('amountPaidDisplay').value=money(paid);$('payableDisplay').value=money(pay);$('paymentStatusDisplay').value=type==='Paid'?'Paid':(grand>0?'Unpaid':'Paid')}function reset(){items=[];catalog=[];$('purchaseDate').value=today();$('client').value='';$('currency').value='USD';$('paymentTerm').value='';$('clientInvoiceNumber').value='';$('purchaser').value='';$('paymentType').value='Credit';$('product').innerHTML='<option value="">Select Product</option>';$('qty').value='';$('price').value='';$('unit').value='';$('discount').value='0';$('note').value='';renderItems();load()}async function save(){const cid=$('client').value,pid=$('purchaser').value;if(!cid)return alert('Client is required.');if(!pid)return alert('Purchaser is required.');if(!$('clientInvoiceNumber').value.trim())return alert('Client Invoice Number is required.');if(!items.length)return alert('At least one item is required.');const c=clients.find(x=>x.clientId===cid),s=staff.find(x=>x.staffId===pid);$('saveBtn').disabled=true;try{const r=await rpc('bb_purchase_save',{p_payload:{purchaseDate:$('purchaseDate').value,clientId:cid,clientName:c?.clientName||'',clientCode:c?.clientCode||'',clientInvoiceNumber:$('clientInvoiceNumber').value.trim(),currency:$('currency').value,paymentTerm:$('paymentTerm').value,purchaserStaffId:pid,purchaserName:s?.staffName||'',paymentType:$('paymentType').value,discount:num($('discount').value),note:$('note').value.trim(),items}});alert(`Purchase ${r.purchaseId} saved to Supabase DEV.`);reset()}catch(e){alert(e.message)}finally{$('saveBtn').disabled=false}}$('purchaseDate').value=today();$('client').addEventListener('change',clientChanged);$('product').addEventListener('change',productChanged);$('addBtn').addEventListener('click',addItem);$('discount').addEventListener('input',renderItems);$('paymentType').addEventListener('change',renderItems);$('itemsBody').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){items.splice(Number(b.dataset.i),1);renderItems()}});$('saveBtn').addEventListener('click',save);$('clearBtn').addEventListener('click',reset);$('newBtn').addEventListener('click',reset);load();</script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BIG BROTHER — Purchase Recorder Supabase DEV</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+:root{
+  --blue:#174a91;
+  --line:#dce4ee;
+  --muted:#6b7280;
+  --green:#157a51;
+  --orange:#a85b12;
+}
+
+body{
+  margin:0;
+  background:#f4f7fb;
+  color:#1f2937;
+  font-family:Inter,Arial,sans-serif;
+}
+
+.page{
+  max-width:1500px;
+  margin:auto;
+  padding:22px;
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:16px;
+}
+
+h1{
+  margin:0;
+  color:var(--blue);
+  font-size:28px;
+}
+
+.sub{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:5px;
+}
+
+.card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:0 3px 14px #173a6610;
+  padding:17px;
+  margin-bottom:15px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+
+label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  color:#475569;
+  margin-bottom:6px;
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  padding:10px 11px;
+  font:inherit;
+  background:#fff;
+}
+
+input[readonly]{
+  background:#f8fafc;
+  color:#475569;
+}
+
+textarea{
+  min-height:72px;
+}
+
+.section-title{
+  font-weight:900;
+  color:#22354d;
+  font-size:16px;
+  margin-bottom:12px;
+}
+
+.status{
+  background:#eef4fb;
+  border:1px solid #d9e5f3;
+  color:#405d7d;
+  padding:10px 12px;
+  border-radius:8px;
+  font-size:12px;
+  margin-bottom:12px;
+}
+
+.status.success{
+  background:#eef9f3;
+  border-color:#c9ead9;
+  color:#176c4a;
+}
+
+.status.warn{
+  background:#fff8e8;
+  border-color:#f0d9a5;
+  color:#775018;
+}
+
+.helper{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:5px;
+  line-height:1.4;
+}
+
+.tablewrap{
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1320px;
+}
+
+th,
+td{
+  padding:9px 10px;
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+  text-align:left;
+  white-space:nowrap;
+}
+
+th{
+  background:#f8fafc;
+  color:#475569;
+}
+
+td input{
+  padding:8px;
+}
+
+.addline{
+  display:grid;
+  grid-template-columns:2fr .75fr .75fr 1fr .8fr .8fr auto;
+  gap:9px;
+  align-items:end;
+  margin-bottom:12px;
+}
+
+button{
+  cursor:pointer;
+  font-weight:800;
+  border-radius:8px;
+  padding:10px 14px;
+}
+
+.primary{
+  border:0;
+  background:var(--blue);
+  color:#fff;
+}
+
+.secondary{
+  border:1px solid var(--line);
+  background:#fff;
+  color:#334155;
+}
+
+.danger{
+  border:0;
+  background:#fff0f0;
+  color:#a62f2f;
+  padding:7px 9px;
+}
+
+.actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+  margin-top:14px;
+}
+
+.summary-grid{
+  display:grid;
+  grid-template-columns:minmax(320px,1fr) minmax(360px,440px);
+  gap:18px;
+  align-items:start;
+  margin-top:12px;
+}
+
+.qty-summary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+}
+
+.qbox{
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fbfcfe;
+  padding:11px;
+}
+
+.qbox small{
+  display:block;
+  font-size:9px;
+  text-transform:uppercase;
+  color:#76869a;
+  font-weight:900;
+}
+
+.qbox strong{
+  display:block;
+  margin-top:5px;
+  font-size:18px;
+  color:var(--blue);
+}
+
+.qbox.promo strong{
+  color:var(--green);
+}
+
+.summary{
+  width:100%;
+}
+
+.srow{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  padding:7px 0;
+  border-bottom:1px dashed #d7dee8;
+}
+
+.srow.total{
+  font-size:18px;
+  font-weight:900;
+  color:var(--blue);
+  border-bottom:0;
+}
+
+.small{
+  font-size:11px;
+  color:var(--muted);
+}
+
+.pill{
+  display:inline-block;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#e8f7ef;
+  color:#168652;
+  font-weight:900;
+  font-size:11px;
+}
+
+.promo-note{
+  margin-bottom:12px;
+  border:1px solid #cfe7da;
+  background:#f3fbf7;
+  color:#316a50;
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:11px;
+  line-height:1.5;
+}
+
+.effective{
+  font-weight:900;
+  color:var(--green);
+}
+
+.amount{
+  font-weight:800;
+  color:#334155;
+}
+
+@media(max-width:1100px){
+
+  .addline{
+    grid-template-columns:2fr 1fr 1fr 1fr;
+  }
+
+  .addline button{
+    grid-column:auto;
+  }
+
+  .summary-grid{
+    grid-template-columns:1fr;
+  }
+
+}
+
+@media(max-width:900px){
+
+  .grid{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .addline{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .qty-summary{
+    grid-template-columns:1fr 1fr 1fr;
+  }
+
+}
+
+@media(max-width:600px){
+
+  .grid,
+  .addline,
+  .qty-summary{
+    grid-template-columns:1fr;
+  }
+
+  .page{
+    padding:12px;
+  }
+
+  .top{
+    display:block;
+  }
+
+  .top>div:last-child{
+    margin-top:10px;
+  }
+
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="page">
+
+  <div class="top">
+
+    <div>
+
+      <h1>Create Purchase</h1>
+
+      <div class="sub">
+        BIG BROTHER — Supabase DEV · Purchase Promotion V1
+      </div>
+
+    </div>
+
+    <div>
+
+      <span class="pill">
+        Secure Supabase DEV
+      </span>
+
+      <button
+        class="secondary"
+        id="newBtn"
+      >
+        New Purchase
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="section-title">
+      Purchase Information
+    </div>
+
+    <div
+      id="status"
+      class="status"
+    >
+      Connecting to Supabase...
+    </div>
+
+    <div class="grid">
+
+      <div>
+
+        <label>
+          Purchase ID
+        </label>
+
+        <input
+          id="purchaseId"
+          readonly
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Purchase Date *
+        </label>
+
+        <input
+          id="purchaseDate"
+          type="date"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Client / Supplier *
+        </label>
+
+        <select id="client"></select>
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Currency
+        </label>
+
+        <input
+          id="currency"
+          readonly
+          value="USD"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Client Invoice Number *
+        </label>
+
+        <input id="clientInvoiceNumber">
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Payment Term
+        </label>
+
+        <input
+          id="paymentTerm"
+          readonly
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Purchaser *
+        </label>
+
+        <select id="purchaser"></select>
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Payment Type *
+        </label>
+
+        <select id="paymentType">
+
+          <option>
+            Credit
+          </option>
+
+          <option>
+            Paid
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="section-title">
+      Products
+    </div>
+
+
+    <div class="promo-note">
+
+      <strong>
+        Promotion Qty
+      </strong>
+
+      is free quantity received because of this Purchase.
+
+      It is still
+
+      <strong>
+        PURCHASED inventory
+      </strong>,
+
+      not Zero-Cost Stock.
+
+      Supplier payable uses Purchase Qty only;
+
+      inventory receives Purchase Qty + Promotion Qty.
+
+    </div>
+
+
+    <div class="addline">
+
+
+      <div>
+
+        <label>
+          Product
+        </label>
+
+        <select id="product"></select>
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Purchase Qty *
+        </label>
+
+        <input
+          id="qty"
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Promotion Qty
+        </label>
+
+        <input
+          id="promotionQty"
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          value="0"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Supplier Unit Price *
+        </label>
+
+        <input
+          id="price"
+          type="number"
+          min="0"
+          step="0.0001"
+          inputmode="decimal"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Total Receive
+        </label>
+
+        <input
+          id="totalReceivePreview"
+          readonly
+          value="0.00"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Unit
+        </label>
+
+        <input
+          id="unit"
+          readonly
+        >
+
+      </div>
+
+
+      <button
+        class="primary"
+        id="addBtn"
+      >
+        + Add
+      </button>
+
+    </div>
+
+
+    <div class="tablewrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              No.
+            </th>
+
+            <th>
+              Product
+            </th>
+
+            <th>
+              Code
+            </th>
+
+            <th>
+              Purchase Qty
+            </th>
+
+            <th>
+              Promotion Qty
+            </th>
+
+            <th>
+              Total Receive
+            </th>
+
+            <th>
+              Unit
+            </th>
+
+            <th>
+              Supplier Unit Price
+            </th>
+
+            <th>
+              Effective Unit Cost
+            </th>
+
+            <th>
+              Amount
+            </th>
+
+            <th></th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="itemsBody"></tbody>
+
+      </table>
+
+    </div>
+
+
+    <div class="summary-grid">
+
+
+      <div class="qty-summary">
+
+
+        <div class="qbox">
+
+          <small>
+            Purchase Qty
+          </small>
+
+          <strong id="purchaseQtyTotal">
+            0.00
+          </strong>
+
+        </div>
+
+
+        <div class="qbox promo">
+
+          <small>
+            Promotion Qty
+          </small>
+
+          <strong id="promotionQtyTotal">
+            0.00
+          </strong>
+
+        </div>
+
+
+        <div class="qbox">
+
+          <small>
+            Total Receive Qty
+          </small>
+
+          <strong id="receiveQtyTotal">
+            0.00
+          </strong>
+
+        </div>
+
+
+      </div>
+
+
+      <div class="summary">
+
+
+        <div class="srow">
+
+          <span>
+            Subtotal
+          </span>
+
+          <strong id="subtotal">
+            0.00
+          </strong>
+
+        </div>
+
+
+        <div class="srow">
+
+          <span>
+            Discount
+          </span>
+
+          <span>
+
+            <input
+              id="discount"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0"
+              style="width:130px;text-align:right"
+            >
+
+          </span>
+
+        </div>
+
+
+        <div class="srow">
+
+          <span>
+            Net Inventory Cost
+          </span>
+
+          <strong id="inventoryCostTotal">
+            0.00
+          </strong>
+
+        </div>
+
+
+        <div class="srow total">
+
+          <span>
+            Grand Total
+          </span>
+
+          <span id="grandTotal">
+            0.00
+          </span>
+
+        </div>
+
+
+      </div>
+
+
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="section-title">
+      Payment
+    </div>
+
+    <div class="grid">
+
+
+      <div>
+
+        <label>
+          Payment Type
+        </label>
+
+        <input
+          id="paymentTypeDisplay"
+          readonly
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Amount Paid
+        </label>
+
+        <input
+          id="amountPaidDisplay"
+          readonly
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Payable
+        </label>
+
+        <input
+          id="payableDisplay"
+          readonly
+        >
+
+      </div>
+
+
+      <div>
+
+        <label>
+          Payment Status
+        </label>
+
+        <input
+          id="paymentStatusDisplay"
+          readonly
+        >
+
+      </div>
+
+
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="section-title">
+      Note
+    </div>
+
+    <textarea id="note"></textarea>
+
+    <div class="actions">
+
+      <button
+        class="secondary"
+        id="clearBtn"
+      >
+        Clear
+      </button>
+
+      <button
+        class="primary"
+        id="saveBtn"
+      >
+        Complete Purchase
+      </button>
+
+    </div>
+
+  </div>
+
+
+</div>
+
+
+
+<script>
+
+'use strict';
+
+
+
+const URL=
+  'https://sjfhlaclgmkwwofzstok.supabase.co';
+
+
+const KEY=
+  'sb_publishable_w762jR65CWwlO30fKQsYOw_6L9grx8S';
+
+
+const SESSION_KEY=
+  'BB_SUPABASE_DEV_SESSION_V1';
+
+
+
+let session=null;
+
+let clients=[];
+
+let staff=[];
+
+let catalog=[];
+
+let items=[];
+
+
+
+const $=
+  id=>
+    document.getElementById(
+      id
+    );
+
+
+const num=
+  value=>
+    Number.isFinite(
+      Number(
+        value
+      )
+    )
+      ?
+      Number(
+        value
+      )
+      :
+      0;
+
+
+const esc=
+  value=>
+    String(
+      value ?? ''
+    )
+    .replace(
+      /[&<>"']/g,
+      character=>(
+        {
+          '&':'&amp;',
+          '<':'&lt;',
+          '>':'&gt;',
+          '"':'&quot;',
+          "'":'&#039;'
+        }[
+          character
+        ]
+      )
+    );
+
+
+
+function today(){
+
+  const d=
+    new Date();
+
+
+  return(
+    d.getFullYear()
+    +
+    '-'
+    +
+    String(
+      d.getMonth()+1
+    )
+    .padStart(
+      2,
+      '0'
+    )
+    +
+    '-'
+    +
+    String(
+      d.getDate()
+    )
+    .padStart(
+      2,
+      '0'
+    )
+  );
+
+}
+
+
+
+function money(
+  value,
+  decimals=2
+){
+
+  return num(
+    value
+  )
+  .toLocaleString(
+    'en-US',
+    {
+      minimumFractionDigits:
+        decimals,
+
+      maximumFractionDigits:
+        decimals
+    }
+  );
+
+}
+
+
+
+function qtyText(
+  value
+){
+
+  return num(
+    value
+  )
+  .toLocaleString(
+    'en-US',
+    {
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }
+  );
+
+}
+
+
+
+function costText(
+  value
+){
+
+  return num(
+    value
+  )
+  .toLocaleString(
+    'en-US',
+    {
+      minimumFractionDigits:2,
+      maximumFractionDigits:6
+    }
+  );
+
+}
+
+
+
+function status(
+  text,
+  type=''
+){
+
+  $('status').textContent=
+    text;
+
+
+  $('status').className=
+    'status'
+    +
+    (
+      type
+        ?
+        ' '+type
+        :
+        ''
+    );
+
+}
+
+
+
+function readSession(){
+
+  try{
+
+    return JSON.parse(
+      localStorage.getItem(
+        SESSION_KEY
+      )
+      ||
+      'null'
+    );
+
+  }catch(error){
+
+    return null;
+
+  }
+
+}
+
+
+
+function saveSession(
+  newSession
+){
+
+  session=
+    newSession;
+
+
+  if(
+    !newSession
+  ){
+
+    localStorage.removeItem(
+      SESSION_KEY
+    );
+
+    return;
+
+  }
+
+
+  if(
+    !newSession.expires_at
+    &&
+    newSession.expires_in
+  ){
+
+    newSession.expires_at=
+      Math.floor(
+        Date.now()/1000
+      )
+      +
+      Number(
+        newSession.expires_in
+      );
+
+  }
+
+
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify(
+      newSession
+    )
+  );
+
+}
+
+
+
+async function parse(
+  response
+){
+
+  const text=
+    await response.text();
+
+
+  let data={};
+
+
+  try{
+
+    data=
+      text
+        ?
+        JSON.parse(
+          text
+        )
+        :
+        {};
+
+  }catch(error){
+
+    data={
+      message:text
+    };
+
+  }
+
+
+  if(
+    !response.ok
+  ){
+
+    throw new Error(
+      data.message
+      ||
+      data.error_description
+      ||
+      data.error
+      ||
+      'Request failed'
+    );
+
+  }
+
+
+  return data;
+
+}
+
+
+
+async function refresh(){
+
+  const current=
+    readSession();
+
+
+  if(
+    !current?.refresh_token
+  ){
+
+    throw new Error(
+      'Please sign in from Clients Editor first.'
+    );
+
+  }
+
+
+  const response=
+    await fetch(
+
+      URL
+      +
+      '/auth/v1/token?grant_type=refresh_token',
+
+      {
+        method:'POST',
+
+        headers:{
+          apikey:KEY,
+          'Content-Type':'application/json'
+        },
+
+        body:
+          JSON.stringify(
+            {
+              refresh_token:
+                current.refresh_token
+            }
+          )
+      }
+
+    );
+
+
+  saveSession(
+    await parse(
+      response
+    )
+  );
+
+}
+
+
+
+async function ensure(){
+
+  session=
+    readSession();
+
+
+  if(
+    !session?.access_token
+  ){
+
+    throw new Error(
+      'Please sign in from Clients Editor first.'
+    );
+
+  }
+
+
+  if(
+    session.expires_at
+    &&
+    session.expires_at
+      <
+      Math.floor(
+        Date.now()/1000
+      )
+      +
+      30
+  ){
+
+    await refresh();
+
+  }
+
+}
+
+
+
+async function rpc(
+  functionName,
+  args={}
+){
+
+  await ensure();
+
+
+  const response=
+    await fetch(
+
+      URL
+      +
+      '/rest/v1/rpc/'
+      +
+      functionName,
+
+      {
+        method:'POST',
+
+        headers:{
+          apikey:KEY,
+          Authorization:
+            'Bearer '
+            +
+            session.access_token,
+          'Content-Type':
+            'application/json'
+        },
+
+        body:
+          JSON.stringify(
+            args
+          ),
+
+        cache:'no-store'
+      }
+
+    );
+
+
+  return parse(
+    response
+  );
+
+}
+
+
+
+function renderBootstrap(
+  data
+){
+
+  clients=
+    data.clients
+    ||
+    [];
+
+
+  staff=
+    data.staff
+    ||
+    [];
+
+
+  $('purchaseId').value=
+    data.nextPurchaseId
+    ||
+    '';
+
+
+  $('client').innerHTML=
+
+    '<option value="">Select Client / Supplier</option>'
+
+    +
+
+    clients
+      .map(
+        client=>
+
+          `<option value="${esc(client.clientId)}">`
+          +
+          `${esc(client.clientName)}`
+          +
+          `${
+            client.clientCode
+              ?
+              ' — '
+              +
+              esc(
+                client.clientCode
+              )
+              :
+              ''
+          }`
+          +
+          `</option>`
+
+      )
+      .join(
+        ''
+      );
+
+
+  let purchasers=
+    staff.filter(
+      employee=>
+        String(
+          employee.position
+          ||
+          ''
+        )
+        .toLowerCase()
+        .includes(
+          'purchas'
+        )
+    );
+
+
+  if(
+    !purchasers.length
+  ){
+
+    purchasers=
+      staff;
+
+  }
+
+
+  $('purchaser').innerHTML=
+
+    '<option value="">Select Purchaser</option>'
+
+    +
+
+    purchasers
+      .map(
+        employee=>
+
+          `<option value="${esc(employee.staffId)}">`
+          +
+          `${esc(employee.staffName)}`
+          +
+          ` — `
+          +
+          `${esc(employee.staffId)}`
+          +
+          `</option>`
+
+      )
+      .join(
+        ''
+      );
+
+
+  status(
+    `${clients.length} Clients and ${purchasers.length} Purchaser/Staff records ready.`,
+    'success'
+  );
+
+}
+
+
+
+async function load(){
+
+  try{
+
+    renderBootstrap(
+      await rpc(
+        'bb_purchase_bootstrap'
+      )
+    );
+
+  }catch(error){
+
+    status(
+      error.message
+    );
+
+  }
+
+
+  renderItems();
+
+}
+
+
+
+async function clientChanged(){
+
+  const clientId=
+    $('client').value;
+
+
+  catalog=[];
+
+
+  $('product').innerHTML=
+    '<option value="">Select Product</option>';
+
+
+  clearProductEntry(
+    false
+  );
+
+
+  if(
+    !clientId
+  ){
+
+    $('currency').value=
+      'USD';
+
+
+    $('paymentTerm').value=
+      '';
+
+
+    return;
+
+  }
+
+
+  try{
+
+    const data=
+      await rpc(
+
+        'bb_purchase_client_catalog',
+
+        {
+          p_client_id:
+            clientId
+        }
+
+      );
+
+
+    catalog=
+      data.products
+      ||
+      [];
+
+
+    $('currency').value=
+      data.client.currency
+      ||
+      'USD';
+
+
+    $('paymentTerm').value=
+      data.client.paymentTerm
+      ||
+      '';
+
+
+    $('product').innerHTML=
+
+      '<option value="">Select Product</option>'
+
+      +
+
+      catalog
+        .map(
+          product=>
+
+            `<option value="${esc(product.productCode)}">`
+            +
+            `${esc(product.productName)}`
+            +
+            ` — `
+            +
+            `${esc(product.productCode)}`
+            +
+            `</option>`
+
+        )
+        .join(
+          ''
+        );
+
+
+    status(
+      `${catalog.length} products loaded for ${data.client.clientName}.`,
+      'success'
+    );
+
+  }catch(error){
+
+    status(
+      error.message
+    );
+
+  }
+
+}
+
+
+
+function productChanged(){
+
+  const product=
+    catalog.find(
+      item=>
+        item.productCode
+        ===
+        $('product').value
+    );
+
+
+  $('price').value=
+    product
+      ?
+      num(
+        product.purchasePrice
+      )
+      :
+      '';
+
+
+  $('unit').value=
+    product
+      ?
+      product.unit
+      ||
+      ''
+      :
+      '';
+
+
+  updateTotalReceivePreview();
+
+}
+
+
+
+function updateTotalReceivePreview(){
+
+  const purchaseQty=
+    Math.max(
+      0,
+      num(
+        $('qty').value
+      )
+    );
+
+
+  const promotionQty=
+    Math.max(
+      0,
+      num(
+        $('promotionQty').value
+      )
+    );
+
+
+  $('totalReceivePreview').value=
+    qtyText(
+      purchaseQty
+      +
+      promotionQty
+    );
+
+}
+
+
+
+function clearProductEntry(
+  clearProduct=true
+){
+
+  if(
+    clearProduct
+  ){
+
+    $('product').value=
+      '';
+
+  }
+
+
+  $('qty').value=
+    '';
+
+
+  $('promotionQty').value=
+    '0';
+
+
+  $('price').value=
+    '';
+
+
+  $('unit').value=
+    '';
+
+
+  $('totalReceivePreview').value=
+    '0.00';
+
+}
+
+
+
+function addItem(){
+
+  const product=
+    catalog.find(
+      item=>
+        item.productCode
+        ===
+        $('product').value
+    );
+
+
+  const purchaseQty=
+    Math.max(
+      0,
+      num(
+        $('qty').value
+      )
+    );
+
+
+  const promotionQty=
+    Math.max(
+      0,
+      num(
+        $('promotionQty').value
+      )
+    );
+
+
+  const unitPrice=
+    Math.max(
+      0,
+      num(
+        $('price').value
+      )
+    );
+
+
+  if(
+    !product
+  ){
+
+    return alert(
+      'Select a product.'
+    );
+
+  }
+
+
+  if(
+    purchaseQty
+    <=
+    0
+  ){
+
+    return alert(
+      'Purchase Qty must be greater than 0.'
+    );
+
+  }
+
+
+  if(
+    unitPrice
+    <=
+    0
+  ){
+
+    return alert(
+      'Supplier Unit Price must be greater than 0.'
+    );
+
+  }
+
+
+  const same=
+    items.find(
+      item=>
+
+        item.productCode
+        ===
+        product.productCode
+
+        &&
+
+        Math.abs(
+          num(
+            item.unitPrice
+          )
+          -
+          unitPrice
+        )
+        <
+        0.0000001
+    );
+
+
+  if(
+    same
+  ){
+
+    same.qty+=
+      purchaseQty;
+
+
+    same.promotionQty+=
+      promotionQty;
+
+  }else{
+
+    items.push(
+      {
+        productCode:
+          product.productCode,
+
+        productName:
+          product.productName,
+
+        qty:
+          purchaseQty,
+
+        promotionQty:
+          promotionQty,
+
+        unit:
+          product.unit
+          ||
+          '',
+
+        unitPrice:
+          unitPrice
+      }
+    );
+
+  }
+
+
+  clearProductEntry(
+    true
+  );
+
+
+  renderItems();
+
+}
+
+
+
+function calculatedLines(){
+
+  const subtotal=
+    items.reduce(
+      (
+        sum,
+        item
+      )=>
+
+        sum
+        +
+        (
+          num(
+            item.qty
+          )
+          *
+          num(
+            item.unitPrice
+          )
+        ),
+
+      0
+    );
+
+
+  const discount=
+    Math.max(
+
+      0,
+
+      Math.min(
+        subtotal,
+        num(
+          $('discount').value
+        )
+      )
+
+    );
+
+
+  return items.map(
+    item=>{
+
+
+      const purchaseQty=
+        num(
+          item.qty
+        );
+
+
+      const promotionQty=
+        num(
+          item.promotionQty
+        );
+
+
+      const totalReceiveQty=
+        purchaseQty
+        +
+        promotionQty;
+
+
+      const amount=
+        purchaseQty
+        *
+        num(
+          item.unitPrice
+        );
+
+
+      const allocatedDiscount=
+        subtotal
+          >
+          0
+
+          ?
+
+          discount
+          *
+          (
+            amount
+            /
+            subtotal
+          )
+
+          :
+
+          0;
+
+
+      const inventoryCost=
+        Math.max(
+          amount
+          -
+          allocatedDiscount,
+          0
+        );
+
+
+      const effectiveUnitCost=
+        totalReceiveQty
+          >
+          0
+
+          ?
+
+          inventoryCost
+          /
+          totalReceiveQty
+
+          :
+
+          0;
+
+
+      return{
+
+        ...item,
+
+        purchaseQty,
+
+        promotionQty,
+
+        totalReceiveQty,
+
+        amount,
+
+        allocatedDiscount,
+
+        inventoryCost,
+
+        effectiveUnitCost
+
+      };
+
+    }
+  );
+
+}
+
+
+
+function renderItems(){
+
+  const lines=
+    calculatedLines();
+
+
+  const body=
+    $('itemsBody');
+
+
+  body.innerHTML=
+
+    lines.length
+
+      ?
+
+      lines
+        .map(
+          (
+            item,
+            index
+          )=>
+
+`
+<tr>
+
+  <td>
+    ${index+1}
+  </td>
+
+  <td>
+    <strong>
+      ${esc(item.productName)}
+    </strong>
+  </td>
+
+  <td>
+    ${esc(item.productCode)}
+  </td>
+
+  <td>
+    ${qtyText(item.purchaseQty)}
+  </td>
+
+  <td>
+    ${qtyText(item.promotionQty)}
+  </td>
+
+  <td>
+    <strong>
+      ${qtyText(item.totalReceiveQty)}
+    </strong>
+  </td>
+
+  <td>
+    ${esc(item.unit)}
+  </td>
+
+  <td>
+    $${costText(item.unitPrice)}
+  </td>
+
+  <td class="effective">
+    $${costText(item.effectiveUnitCost)}
+  </td>
+
+  <td class="amount">
+    $${money(item.amount)}
+  </td>
+
+  <td>
+
+    <button
+      class="danger"
+      data-i="${index}"
+    >
+      Remove
+    </button>
+
+  </td>
+
+</tr>
+`
+
+        )
+        .join(
+          ''
+        )
+
+      :
+
+      '<tr><td colspan="11" class="small">No purchase items yet.</td></tr>';
+
+
+  const subtotal=
+    lines.reduce(
+      (
+        sum,
+        item
+      )=>
+        sum
+        +
+        item.amount,
+      0
+    );
+
+
+  const discount=
+    Math.max(
+
+      0,
+
+      Math.min(
+        subtotal,
+        num(
+          $('discount').value
+        )
+      )
+
+    );
+
+
+  const grandTotal=
+    Math.max(
+      0,
+      subtotal
+      -
+      discount
+    );
+
+
+  const totalPurchaseQty=
+    lines.reduce(
+      (
+        sum,
+        item
+      )=>
+        sum
+        +
+        item.purchaseQty,
+      0
+    );
+
+
+  const totalPromotionQty=
+    lines.reduce(
+      (
+        sum,
+        item
+      )=>
+        sum
+        +
+        item.promotionQty,
+      0
+    );
+
+
+  const totalReceiveQty=
+    lines.reduce(
+      (
+        sum,
+        item
+      )=>
+        sum
+        +
+        item.totalReceiveQty,
+      0
+    );
+
+
+  const paymentType=
+    $('paymentType').value;
+
+
+  const amountPaid=
+    paymentType
+    ===
+    'Paid'
+
+      ?
+
+      grandTotal
+
+      :
+
+      0;
+
+
+  const payable=
+    paymentType
+    ===
+    'Paid'
+
+      ?
+
+      0
+
+      :
+
+      grandTotal;
+
+
+  $('purchaseQtyTotal').textContent=
+    qtyText(
+      totalPurchaseQty
+    );
+
+
+  $('promotionQtyTotal').textContent=
+    qtyText(
+      totalPromotionQty
+    );
+
+
+  $('receiveQtyTotal').textContent=
+    qtyText(
+      totalReceiveQty
+    );
+
+
+  $('subtotal').textContent=
+    money(
+      subtotal
+    );
+
+
+  $('inventoryCostTotal').textContent=
+    money(
+      grandTotal
+    );
+
+
+  $('grandTotal').textContent=
+    money(
+      grandTotal
+    );
+
+
+  $('paymentTypeDisplay').value=
+    paymentType;
+
+
+  $('amountPaidDisplay').value=
+    money(
+      amountPaid
+    );
+
+
+  $('payableDisplay').value=
+    money(
+      payable
+    );
+
+
+  $('paymentStatusDisplay').value=
+
+    paymentType
+    ===
+    'Paid'
+
+      ?
+
+      'Paid'
+
+      :
+
+      (
+        grandTotal
+        >
+        0
+
+          ?
+
+          'Unpaid'
+
+          :
+
+          'Paid'
+      );
+
+}
+
+
+
+function reset(){
+
+  items=[];
+
+  catalog=[];
+
+
+  $('purchaseDate').value=
+    today();
+
+
+  $('client').value=
+    '';
+
+
+  $('currency').value=
+    'USD';
+
+
+  $('paymentTerm').value=
+    '';
+
+
+  $('clientInvoiceNumber').value=
+    '';
+
+
+  $('purchaser').value=
+    '';
+
+
+  $('paymentType').value=
+    'Credit';
+
+
+  $('product').innerHTML=
+    '<option value="">Select Product</option>';
+
+
+  $('discount').value=
+    '0';
+
+
+  $('note').value=
+    '';
+
+
+  clearProductEntry(
+    false
+  );
+
+
+  renderItems();
+
+
+  load();
+
+}
+
+
+
+async function save(){
+
+  const clientId=
+    $('client').value;
+
+
+  const purchaserId=
+    $('purchaser').value;
+
+
+  if(
+    !clientId
+  ){
+
+    return alert(
+      'Client is required.'
+    );
+
+  }
+
+
+  if(
+    !purchaserId
+  ){
+
+    return alert(
+      'Purchaser is required.'
+    );
+
+  }
+
+
+  if(
+    !$('clientInvoiceNumber').value.trim()
+  ){
+
+    return alert(
+      'Client Invoice Number is required.'
+    );
+
+  }
+
+
+  if(
+    !items.length
+  ){
+
+    return alert(
+      'At least one item is required.'
+    );
+
+  }
+
+
+  const client=
+    clients.find(
+      item=>
+        item.clientId
+        ===
+        clientId
+    );
+
+
+  const purchaser=
+    staff.find(
+      item=>
+        item.staffId
+        ===
+        purchaserId
+    );
+
+
+  const payloadItems=
+    items.map(
+      item=>(
+        {
+          productCode:
+            item.productCode,
+
+          productName:
+            item.productName,
+
+          qty:
+            num(
+              item.qty
+            ),
+
+          promotionQty:
+            num(
+              item.promotionQty
+            ),
+
+          unit:
+            item.unit
+            ||
+            '',
+
+          unitPrice:
+            num(
+              item.unitPrice
+            )
+        }
+      )
+    );
+
+
+  $('saveBtn').disabled=
+    true;
+
+
+  try{
+
+
+    const result=
+      await rpc(
+
+        'bb_purchase_save',
+
+        {
+          p_payload:{
+
+            purchaseDate:
+              $('purchaseDate').value,
+
+            clientId:
+              clientId,
+
+            clientName:
+              client?.clientName
+              ||
+              '',
+
+            clientCode:
+              client?.clientCode
+              ||
+              '',
+
+            clientInvoiceNumber:
+              $('clientInvoiceNumber')
+                .value
+                .trim(),
+
+            currency:
+              $('currency').value,
+
+            paymentTerm:
+              $('paymentTerm').value,
+
+            purchaserStaffId:
+              purchaserId,
+
+            purchaserName:
+              purchaser?.staffName
+              ||
+              '',
+
+            paymentType:
+              $('paymentType').value,
+
+            discount:
+              num(
+                $('discount').value
+              ),
+
+            note:
+              $('note')
+                .value
+                .trim(),
+
+            items:
+              payloadItems
+
+          }
+        }
+
+      );
+
+
+    alert(
+
+      `Purchase ${result.purchaseId} saved to Supabase DEV.\n\n`
+
+      +
+
+      `Grand Total: $${money(result.grandTotal)}\n`
+
+      +
+
+      `Promotion inventory is included in Stock Receiving.`
+
+    );
+
+
+    reset();
+
+
+  }catch(error){
+
+
+    alert(
+      error.message
+    );
+
+
+  }finally{
+
+
+    $('saveBtn').disabled=
+      false;
+
+
+  }
+
+}
+
+
+
+$('purchaseDate').value=
+  today();
+
+
+
+$('client')
+  .addEventListener(
+    'change',
+    clientChanged
+  );
+
+
+$('product')
+  .addEventListener(
+    'change',
+    productChanged
+  );
+
+
+$('qty')
+  .addEventListener(
+    'input',
+    updateTotalReceivePreview
+  );
+
+
+$('promotionQty')
+  .addEventListener(
+    'input',
+    updateTotalReceivePreview
+  );
+
+
+$('addBtn')
+  .addEventListener(
+    'click',
+    addItem
+  );
+
+
+$('discount')
+  .addEventListener(
+    'input',
+    renderItems
+  );
+
+
+$('paymentType')
+  .addEventListener(
+    'change',
+    renderItems
+  );
+
+
+$('itemsBody')
+  .addEventListener(
+    'click',
+    event=>{
+
+      const button=
+        event.target.closest(
+          '[data-i]'
+        );
+
+
+      if(
+        button
+      ){
+
+        items.splice(
+          Number(
+            button.dataset.i
+          ),
+          1
+        );
+
+
+        renderItems();
+
+      }
+
+    }
+  );
+
+
+$('saveBtn')
+  .addEventListener(
+    'click',
+    save
+  );
+
+
+$('clearBtn')
+  .addEventListener(
+    'click',
+    reset
+  );
+
+
+$('newBtn')
+  .addEventListener(
+    'click',
+    reset
+  );
+
+
+
+load();
+
+</script>
+
+</body>
+</html>
