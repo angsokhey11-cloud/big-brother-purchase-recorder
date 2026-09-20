@@ -2716,5 +2716,88 @@ load();
 
 </script>
 
+<script id="bb-ios-purchase-decimal-v1">
+(function(){
+'use strict';
+
+const isIOS=()=>{
+  const ua=navigator.userAgent||'';
+  return /iPhone|iPad|iPod/i.test(ua) ||
+    (navigator.platform==='MacIntel' && Number(navigator.maxTouchPoints||0)>1);
+};
+
+if(!isIOS())return;
+
+function candidate(input){
+  if(!input || String(input.tagName||'').toLowerCase()!=='input')return false;
+  if(input.readOnly || input.disabled)return false;
+
+  const type=String(input.type||'text').toLowerCase();
+  if(['date','time','datetime-local','month','week','checkbox','radio','file','range','hidden','button','submit','reset','search','email','url'].includes(type))return false;
+
+  const mode=String(input.getAttribute('inputmode')||input.inputMode||'').toLowerCase();
+  if(mode==='decimal')return true;
+
+  const stepRaw=String(input.getAttribute('step')||'').trim().toLowerCase();
+  if(stepRaw==='any')return true;
+  if(stepRaw){
+    const step=Number(stepRaw);
+    if(Number.isFinite(step)&&step>0&&!Number.isInteger(step))return true;
+  }
+
+  const semantic=[
+    input.id,
+    input.name,
+    input.className,
+    input.getAttribute('aria-label'),
+    input.parentElement?.querySelector?.('label')?.textContent
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return /(price|amount|cost|discount|qty|quantity|paid|payment|payable|purchase|total|value)/.test(semantic);
+}
+
+function patch(input){
+  if(!candidate(input))return;
+  input.dataset.bbIosPurchaseDecimal='1';
+  try{input.type='text'}catch(_){}
+  input.setAttribute('inputmode','decimal');
+  input.removeAttribute('pattern');
+  input.setAttribute('autocapitalize','none');
+  input.setAttribute('spellcheck','false');
+}
+
+function apply(root=document){
+  if(root.matches?.('input'))patch(root);
+  root.querySelectorAll?.('input').forEach(patch);
+}
+
+document.addEventListener('input',event=>{
+  const input=event.target;
+  if(input?.dataset?.bbIosPurchaseDecimal!=='1')return;
+  const raw=String(input.value||'');
+  if(!raw.includes(','))return;
+  const pos=input.selectionStart;
+  input.value=raw.replace(/,/g,'.');
+  if(typeof pos==='number'){
+    try{input.setSelectionRange(pos,pos)}catch(_){}
+  }
+},true);
+
+const start=()=>{
+  apply(document);
+  new MutationObserver(records=>{
+    for(const record of records){
+      for(const node of record.addedNodes||[]){
+        if(node?.nodeType===1)apply(node);
+      }
+    }
+  }).observe(document.body,{childList:true,subtree:true});
+  setInterval(()=>apply(document),1200);
+};
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+else start();
+})();
+</script>
 </body>
 </html>
