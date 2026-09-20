@@ -27,7 +27,7 @@ async function assertPermission(){const p=await rpc('bb_current_access_profile')
 function esc(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 try{
   await assertPermission();
-  const response=await fetch('index.html?v=20260915-1',{cache:'no-store'});
+  const response=await fetch('index.html?v=20260920-iosdecimal1',{cache:'no-store'});
   if(!response.ok)throw new Error('Could not load Purchase Recorder source.');
   let html=await response.text();
   const headClose=html.toLowerCase().indexOf('</head>');
@@ -35,7 +35,7 @@ try{
   html=html.slice(0,headClose)+'<link rel="stylesheet" href="mobile-purchase.css?v=20260915-1">\n'+html.slice(headClose);
   const bodyClose=html.toLowerCase().lastIndexOf('</body>');
   if(bodyClose<0)throw new Error('Purchase Recorder source is missing </body>.');
-  html=html.slice(0,bodyClose)+'<script src="mobile-purchase.js?v=20260915-1"><\/script>\n'+html.slice(bodyClose);
+  html=html.slice(0,bodyClose)+'<script src="mobile-purchase.js?v=20260920-iosdecimal1"><\/script>\n'+html.slice(bodyClose);
   html=html.replace('<title>BIG BROTHER — Purchase Recorder Supabase DEV</title>','<title>BIG BROTHER — Create Purchase Mobile</title>');
   document.open();document.write(html);document.close();
 }catch(error){
