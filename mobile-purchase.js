@@ -1,9 +1,97 @@
 /* BIG BROTHER — Purchase Recorder Mobile V1 */
 (function(){
 'use strict';
+
+function isIOS(){
+  const ua=navigator.userAgent||'';
+  return /iPhone|iPad|iPod/i.test(ua) ||
+    (navigator.platform==='MacIntel' && Number(navigator.maxTouchPoints||0)>1);
+}
+
+function decimalPurchaseInput(input){
+  if(!input || String(input.tagName||'').toLowerCase()!=='input')return false;
+  if(input.readOnly || input.disabled)return false;
+
+  const type=String(input.type||'text').toLowerCase();
+  if(['date','time','datetime-local','month','week','checkbox','radio','file','range','hidden','button','submit','reset','search','email','url'].includes(type))return false;
+
+  const mode=String(input.getAttribute('inputmode')||input.inputMode||'').toLowerCase();
+  if(mode==='decimal')return true;
+
+  const stepRaw=String(input.getAttribute('step')||'').trim().toLowerCase();
+  if(stepRaw==='any')return true;
+  if(stepRaw){
+    const step=Number(stepRaw);
+    if(Number.isFinite(step)&&step>0&&!Number.isInteger(step))return true;
+  }
+
+  const semantic=[
+    input.id,
+    input.name,
+    input.className,
+    input.getAttribute('aria-label'),
+    input.getAttribute('placeholder'),
+    input.parentElement?.querySelector?.('label')?.textContent
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return /(price|amount|cost|discount|qty|quantity|paid|payment|payable|total|purchase|value)/.test(semantic);
+}
+
+function patchPurchaseDecimal(input){
+  if(!isIOS() || !decimalPurchaseInput(input))return;
+
+  input.dataset.bbIosPurchaseDecimal='1';
+  try{input.type='text'}catch(_){}
+  input.setAttribute('inputmode','decimal');
+  input.removeAttribute('pattern');
+  input.setAttribute('autocapitalize','none');
+  input.setAttribute('spellcheck','false');
+}
+
+function patchPurchaseDecimals(root=document){
+  if(!isIOS())return;
+  if(root.matches?.('input'))patchPurchaseDecimal(root);
+  root.querySelectorAll?.('input').forEach(patchPurchaseDecimal);
+}
+
+function installPurchaseDecimalSupport(){
+  if(!isIOS())return;
+
+  patchPurchaseDecimals(document);
+
+  document.addEventListener('input',event=>{
+    const input=event.target;
+    if(input?.dataset?.bbIosPurchaseDecimal!=='1')return;
+
+    const raw=String(input.value||'');
+    if(!raw.includes(','))return;
+
+    const start=input.selectionStart;
+    input.value=raw.replace(/,/g,'.');
+
+    if(typeof start==='number'){
+      try{input.setSelectionRange(start,start)}catch(_){}
+    }
+  },true);
+
+  new MutationObserver(records=>{
+    for(const record of records){
+      for(const node of record.addedNodes||[]){
+        if(node?.nodeType===1)patchPurchaseDecimals(node);
+      }
+    }
+  }).observe(document.body,{childList:true,subtree:true});
+
+  setTimeout(()=>patchPurchaseDecimals(document),100);
+  setTimeout(()=>patchPurchaseDecimals(document),450);
+  setTimeout(()=>patchPurchaseDecimals(document),1200);
+}
+
 function boot(){
   const page=document.querySelector('.page');
   if(!page)return;
+
+  installPurchaseDecimalSupport();
   const cards=[...page.querySelectorAll(':scope > .card')];
   if(cards[0])cards[0].classList.add('bb-purchase-info');
   if(cards[1])cards[1].classList.add('bb-products');
