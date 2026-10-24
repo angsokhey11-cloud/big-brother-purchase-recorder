@@ -27,7 +27,7 @@ async function assertPermission(){const p=await rpc('bb_current_access_profile')
 function esc(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 try{
   await assertPermission();
-  const response=await fetch('index.html?v=20260920-iosdecimal1',{cache:'no-store'});
+  const response=await fetch('index.html?v=20260920-iosdecimal1',{cache:'default'});
   if(!response.ok)throw new Error('Could not load Purchase Recorder source.');
   let html=await response.text();
   const headClose=html.toLowerCase().indexOf('</head>');
