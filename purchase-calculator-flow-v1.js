@@ -33,11 +33,12 @@ function renderProducts(){
    return;
  }
  const current=selectedCode();
+ const symbol=String($('currency')?.value||'USD').toUpperCase()==='KHR'?'៛':'$';
  tiles.innerHTML=shown.map(p=>{
    const code=String(p.productCode||''),name=String(p.productName||code);
    return '<button type="button" class="bb-pick-tile'+(current===code?' active':'')+'" data-bb-product="'+escapeHtml(code)+'" aria-pressed="'+(current===code?'true':'false')+'" title="'+escapeHtml(name)+'">'+
     '<span class="bb-pick-name">'+escapeHtml(name)+'</span>'+
-    '<span class="bb-pick-foot"><span>'+escapeHtml(code)+'</span><b>$'+fmtPrice(p.purchasePrice)+'</b></span></button>';
+    '<span class="bb-pick-foot"><span>'+escapeHtml(code)+'</span><b>'+symbol+fmtPrice(p.purchasePrice)+'</b></span></button>';
  }).join('');
 }
 function showSelection(){
