@@ -124,9 +124,8 @@ function boot(){
   const polishItems=()=>{if(!body)return;body.querySelectorAll(':scope > tr').forEach(tr=>{const empty=!!tr.querySelector('td[colspan]');tr.classList.toggle('bb-empty-item',empty)})};
   if(body){new MutationObserver(polishItems).observe(body,{childList:true,subtree:true});polishItems()}
 
-  const product=document.getElementById('product');
-  const addBtn=document.getElementById('addBtn');
-  addBtn?.addEventListener('click',()=>{setTimeout(()=>{if(product&&!product.disabled)product.focus({preventScroll:true})},60)});
+  // Product selection now uses visible calculator-style tiles.
+  // Do not focus the hidden legacy select after adding a product.
 
   // Keep the important action visible above mobile browser UI / keyboard changes.
   if(window.visualViewport){const adjust=()=>{const bar=document.querySelector('.bb-mobile-actions');if(!bar)return;const gap=Math.max(0,window.innerHeight-(visualViewport.height+visualViewport.offsetTop));bar.style.transform=gap>0?'translateY(-'+gap+'px)':''};visualViewport.addEventListener('resize',adjust);visualViewport.addEventListener('scroll',adjust)}
