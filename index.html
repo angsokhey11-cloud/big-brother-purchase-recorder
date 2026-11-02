@@ -350,6 +350,7 @@ button{
 
 }
 </style>
+<link rel="stylesheet" href="purchase-calculator-flow-v1.css?v=20261102-calculator1">
 
 <script src="https://angsokhey11-cloud.github.io/big-brother-dashboard/bb-system-dialog-v1.js?v=20261005-dialog2"></script></head>
 
@@ -1538,7 +1539,8 @@ async function clientChanged(){
 
 
   catalog=[];
-
+  window.bbPurchaseEditIndex=-1;
+  window.BBPurchaseCalculatorFlowV1?.afterReset();
 
   $('product').innerHTML=
     '<option value="">Select Product</option>';
@@ -1625,6 +1627,7 @@ async function clientChanged(){
         );
 
 
+    window.BBPurchaseCalculatorFlowV1?.renderProducts();
     status(
       `${catalog.length} products loaded for ${data.client.clientName}.`,
       'success'
@@ -1674,6 +1677,7 @@ function productChanged(){
 
 
   updateTotalReceivePreview();
+  window.BBPurchaseCalculatorFlowV1?.showSelection();
 
 }
 
@@ -1822,67 +1826,24 @@ function addItem(){
   }
 
 
-  const same=
-    items.find(
-      item=>
-
-        item.productCode
-        ===
-        product.productCode
-
-        &&
-
-        Math.abs(
-          num(
-            item.unitPrice
-          )
-          -
-          unitPrice
-        )
-        <
-        0.0000001
-    );
-
-
-  if(
-    same
-  ){
-
-    same.qty+=
-      purchaseQty;
-
-
-    same.promotionQty+=
-      promotionQty;
-
+  // Keep each selected entry separate, just like Sales Support Calculator.
+  // Purchase save RPC supports multiple line numbers for the same product.
+  const newLine={
+    productCode:product.productCode,
+    productName:product.productName,
+    qty:purchaseQty,
+    promotionQty,
+    unit:product.unit||'',
+    unitPrice
+  };
+  if(Number.isInteger(window.bbPurchaseEditIndex) &&
+     window.bbPurchaseEditIndex>=0 &&
+     window.bbPurchaseEditIndex<items.length){
+    items[window.bbPurchaseEditIndex]=newLine;
   }else{
-
-    items.push(
-      {
-        productCode:
-          product.productCode,
-
-        productName:
-          product.productName,
-
-        qty:
-          purchaseQty,
-
-        promotionQty:
-          promotionQty,
-
-        unit:
-          product.unit
-          ||
-          '',
-
-        unitPrice:
-          unitPrice
-      }
-    );
-
+    items.push(newLine);
   }
-
+  window.bbPurchaseEditIndex=-1;
 
   clearProductEntry(
     true
@@ -1890,6 +1851,7 @@ function addItem(){
 
 
   renderItems();
+  window.BBPurchaseCalculatorFlowV1?.afterAdd();
 
 }
 
@@ -2124,6 +2086,8 @@ function renderItems(){
 
   <td>
 
+    <button type="button" class="bb-line-edit secondary" data-edit="${index}" aria-label="Edit line ${index+1}">Edit</button>
+
     <button
       class="danger"
       data-i="${index}"
@@ -2339,6 +2303,7 @@ function renderItems(){
 function reset(){
 
   items=[];
+  window.bbPurchaseEditIndex=-1;
 
   catalog=[];
 
@@ -2391,6 +2356,7 @@ function reset(){
 
 
   renderItems();
+  window.BBPurchaseCalculatorFlowV1?.afterReset();
 
 
   load();
@@ -2677,6 +2643,22 @@ $('itemsBody')
     'click',
     event=>{
 
+      const edit=event.target.closest('[data-edit]');
+      if(edit){
+        const index=Number(edit.dataset.edit);
+        const line=items[index];
+        if(!line)return;
+        window.bbPurchaseEditIndex=index;
+        $('product').value=line.productCode;
+        productChanged();
+        $('qty').value=line.qty;
+        $('promotionQty').value=line.promotionQty;
+        $('price').value=line.unitPrice;
+        updateTotalReceivePreview();
+        window.BBPurchaseCalculatorFlowV1?.startEdit();
+        return;
+      }
+
       const button=
         event.target.closest(
           '[data-i]'
@@ -2687,12 +2669,17 @@ $('itemsBody')
         button
       ){
 
-        items.splice(
-          Number(
-            button.dataset.i
-          ),
-          1
-        );
+        const removed=Number(button.dataset.i);
+        items.splice(removed,1);
+        if(Number.isInteger(window.bbPurchaseEditIndex)&&window.bbPurchaseEditIndex>=0){
+          if(window.bbPurchaseEditIndex===removed){
+            window.bbPurchaseEditIndex=-1;
+            clearProductEntry(true);
+          }else if(window.bbPurchaseEditIndex>removed){
+            window.bbPurchaseEditIndex--;
+          }
+          window.BBPurchaseCalculatorFlowV1?.showSelection();
+        }
 
 
         renderItems();
@@ -2728,6 +2715,7 @@ $('newBtn')
 load();
 
 </script>
+<script src="purchase-calculator-flow-v1.js?v=20261102-calculator1"></script>
 
 <script id="bb-ios-purchase-decimal-v1">
 (function(){
