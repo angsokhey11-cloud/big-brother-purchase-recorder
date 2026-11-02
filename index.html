@@ -350,7 +350,65 @@ button{
 
 }
 </style>
-<link rel="stylesheet" href="purchase-calculator-flow-v1.css?v=20261102-calculator1">
+<style id="bbPurchaseCalculatorFlowStyles">
+/* BIG BROTHER · Purchase Calculator-Style Product Entry V1 · 02-Nov-2026
+   Presentation only. The purchase calculations and RPC payload are unchanged. */
+.bb-purchase-picker{border:1px solid #cfdfef;border-radius:14px;padding:13px;background:linear-gradient(135deg,#f6faff,#ffffff);margin:0 0 12px;min-width:0}
+.bb-pick-top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.bb-pick-top strong{font-size:13px;color:#17457a;font-weight:900}
+.bb-pick-top small{font-size:10px;color:#718399;font-weight:800}
+.bb-pick-search{display:flex;align-items:center;gap:8px;border:1px solid #c6d9ee;border-radius:10px;background:#fff;padding:2px 10px;margin:0 0 11px}
+.bb-pick-search svg{width:18px;height:18px;flex:none;color:#557fa7}
+.bb-pick-search input{border:0!important;box-shadow:none!important;background:transparent!important;outline:0!important;font-size:13px!important;min-height:41px!important;padding:7px 2px!important}
+.bb-pick-tiles{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;max-height:240px;overflow:auto;padding:2px;align-content:start}
+.bb-pick-tile{border:1px solid #d8e5f1;background:#fff;border-radius:10px;padding:10px 8px;min-width:0;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;gap:6px;text-align:left;cursor:pointer;color:#173a64;transition:background .12s,border-color .12s,box-shadow .12s}
+.bb-pick-tile:hover{border-color:#5a9ad3;background:#f0f7ff;box-shadow:0 4px 10px #17457a12}
+.bb-pick-tile.active{background:#e5f1ff;border-color:#2273bb;box-shadow:inset 0 0 0 1px #2273bb}
+.bb-pick-tile:focus-visible{outline:3px solid #4e9ef6;outline-offset:2px}
+.bb-pick-name{font-size:11px;font-weight:850;line-height:1.35;overflow-wrap:anywhere}
+.bb-pick-foot{display:flex;align-items:center;justify-content:space-between;gap:3px;font-size:9px;color:#768a9f;min-width:0}
+.bb-pick-foot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bb-pick-foot b{font-size:10px;color:#2163a5;font-weight:900;white-space:nowrap}
+.bb-pick-empty{grid-column:1/-1;padding:18px;border:1px dashed #cadcec;border-radius:10px;text-align:center;color:#70849a;font-size:12px}
+.bb-pick-selection{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border-radius:10px 10px 0 0;background:#eaf4ff;border:1px solid #c9def4;border-bottom:0}
+.bb-pick-selection strong{font-size:12px;color:#17457a;overflow-wrap:anywhere}
+.bb-pick-selection small{font-size:10px;color:#5e7890}
+.bb-pick-selection button{background:#fff;border:1px solid #c8dbec;padding:6px 9px;color:#315c84;font-size:10px}
+.bb-purchase-entry{display:grid!important;grid-template-columns:1fr 1fr 1.3fr .95fr .75fr auto!important;gap:9px!important;align-items:end!important;border:1px solid #c9def4;background:#f8fbff;padding:12px;border-radius:0 0 11px 11px;margin-bottom:12px!important;min-width:0}
+.bb-purchase-entry[hidden],.bb-pick-selection[hidden]{display:none!important}
+.bb-purchase-entry>div:first-child{display:none!important}
+.bb-purchase-entry>div{min-width:0}
+.bb-purchase-entry label{font-size:10px;color:#415d7b}
+.bb-purchase-entry input{font-size:13px;min-height:42px}
+.bb-purchase-entry #addBtn{min-height:42px;white-space:nowrap}
+.bb-purchase-entry.bb-editing{border-color:#e5b35c;background:#fff9ed}
+.bb-purchase-entry.bb-editing+#bbPurchaseEditHelp{color:#8c611a}
+.bb-purchase-help{font-size:10px;color:#7890a7;margin:-6px 0 12px}
+.bb-purchase-list-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 8px;color:#17457a;font-size:13px;font-weight:900}
+.bb-purchase-list-title .bb-line-count{font-size:11px;color:#5c738b;font-weight:800}
+#itemsBody .bb-line-edit{padding:6px 9px;font-size:11px;margin:0 5px 0 0;border:1px solid #b9d6f1;background:#f0f7ff;color:#1b5d99}
+#itemsBody .bb-line-edit:hover{background:#e0f0ff}
+#itemsBody .bb-row-editing{background:#fff9e8}
+.bb-purchase-entry input:focus-visible,.bb-pick-search:focus-within{outline:2px solid #3c94e0;outline-offset:1px}
+@media(max-width:1280px){.bb-pick-tiles{grid-template-columns:repeat(5,minmax(0,1fr))}.bb-purchase-entry{grid-template-columns:repeat(3,minmax(0,1fr)) auto!important}}
+@media(max-width:900px){.bb-pick-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.bb-purchase-entry{grid-template-columns:repeat(3,minmax(0,1fr))!important}.bb-purchase-entry #addBtn{grid-column:1/-1;width:100%}}
+@media(max-width:620px){
+ .bb-purchase-picker{padding:9px;margin-bottom:8px;border-radius:11px}
+ .bb-pick-top{margin-bottom:7px}.bb-pick-top strong{font-size:11px}
+ .bb-pick-search{margin-bottom:8px}.bb-pick-search input{font-size:13px!important;min-height:39px!important}
+ .bb-pick-tiles{grid-template-columns:repeat(3,minmax(0,1fr))!important;max-height:208px;gap:5px}
+ .bb-pick-tile{min-height:68px;padding:7px 6px;gap:4px}
+ .bb-pick-name{font-size:10px}.bb-pick-foot{font-size:8px}.bb-pick-foot b{font-size:9px}
+ .bb-pick-selection{padding:8px}.bb-pick-selection strong{font-size:11px}.bb-pick-selection small{font-size:9px}
+ .bb-purchase-entry{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:9px!important;gap:7px!important}
+ .bb-purchase-entry #addBtn{grid-column:1/-1!important;width:100%!important}
+ .bb-purchase-help{font-size:9px}
+ #itemsBody .bb-line-edit{min-height:30px!important;font-size:9px!important;padding:5px 7px!important}
+ #itemsBody>tr>td:nth-child(11){display:flex!important;gap:4px!important;align-items:center!important}
+}
+@media(max-width:380px){.bb-pick-tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
+</style>
 
 <script src="https://angsokhey11-cloud.github.io/big-brother-dashboard/bb-system-dialog-v1.js?v=20261005-dialog2"></script></head>
 
@@ -2715,7 +2773,161 @@ $('newBtn')
 load();
 
 </script>
-<script src="purchase-calculator-flow-v1.js?v=20261102-calculator1"></script>
+<script id="bbPurchaseCalculatorFlowScript">
+/* BIG BROTHER · Calculator-style Purchase Product Picker · 02-Nov-2026.
+   Uses purchase catalog already loaded by the existing approved RPC.
+   Does not change stock source, promotion handling, discounts or payment RPC.
+ */
+(function(){
+'use strict';
+if(window.BBPurchaseCalculatorFlowV1)return;
+const $=id=>document.getElementById(id);
+const escapeHtml=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const fmtPrice=v=>Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
+let search, tiles, count, entry, selection, selectedName, selectedSub, listCount, help;
+function list(){try{return Array.isArray(catalog)?catalog:[]}catch(_){return []}}
+function cart(){try{return Array.isArray(items)?items:[]}catch(_){return []}}
+function selectedCode(){return String($('product')?.value||'')}
+function activeProduct(){return list().find(p=>String(p.productCode)===selectedCode())}
+function blurSafe(el){try{el.blur()}catch(_){}}
+function focusSafe(el){
+ if(!el)return;
+ try{el.focus({preventScroll:true})}catch(_){try{el.focus()}catch(_){}}
+}
+function renderProducts(){
+ if(!tiles)return;
+ const products=list();
+ const query=String(search?.value||'').trim().toLocaleLowerCase();
+ const shown=products.filter(p=>String(p.productName||'').toLocaleLowerCase().includes(query)||String(p.productCode||'').toLocaleLowerCase().includes(query));
+ if(count)count.textContent=products.length ? (shown.length+' of '+products.length+' products'):'Select a supplier first';
+ if(!products.length){
+   tiles.innerHTML='<div class="bb-pick-empty">Select Client / Supplier above to load its product catalog.</div>';
+   return;
+ }
+ if(!shown.length){
+   tiles.innerHTML='<div class="bb-pick-empty">No matching products. Try a different name or product code.</div>';
+   return;
+ }
+ const current=selectedCode();
+ const symbol=String($('currency')?.value||'USD').toUpperCase()==='KHR'?'៛':'$';
+ tiles.innerHTML=shown.map(p=>{
+   const code=String(p.productCode||''),name=String(p.productName||code);
+   return '<button type="button" class="bb-pick-tile'+(current===code?' active':'')+'" data-bb-product="'+escapeHtml(code)+'" aria-pressed="'+(current===code?'true':'false')+'" title="'+escapeHtml(name)+'">'+
+    '<span class="bb-pick-name">'+escapeHtml(name)+'</span>'+
+    '<span class="bb-pick-foot"><span>'+escapeHtml(code)+'</span><b>'+symbol+fmtPrice(p.purchasePrice)+'</b></span></button>';
+ }).join('');
+}
+function showSelection(){
+ if(!entry||!selection)return;
+ const p=activeProduct();
+ const editing=Number.isInteger(window.bbPurchaseEditIndex)&&window.bbPurchaseEditIndex>=0;
+ if(!p){
+   entry.hidden=true;selection.hidden=true;
+   entry.classList.remove('bb-editing');
+   return;
+ }
+ entry.hidden=false;selection.hidden=false;
+ entry.classList.toggle('bb-editing',editing);
+ if(selectedName)selectedName.textContent=(editing?'Editing line #'+(window.bbPurchaseEditIndex+1)+' · ':'')+String(p.productName||'Product');
+ if(selectedSub)selectedSub.textContent='Purchase Qty → Supplier Price → Enter to '+(editing?'save changes':'add line')+'. Promotion Qty is optional.';
+ if(help)help.textContent=editing?'Editing an existing line; Cancel keeps that line unchanged.':'Same product can be added again as a separate purchase line, even at the same price.';
+ if($('addBtn'))$('addBtn').textContent=editing?'Save Line Changes':'+ Add Line';
+ renderProducts();
+}
+function choose(code){
+ const selector=$('product');
+ if(!selector||!list().some(p=>String(p.productCode)===String(code)))return;
+ selector.value=String(code);
+ if(typeof productChanged==='function')productChanged();
+ else showSelection();
+ focusSafe($('qty'));
+ const qty=$('qty');
+ try{qty?.select()}catch(_){}
+}
+function cancelEdit(){
+ window.bbPurchaseEditIndex=-1;
+ if(typeof clearProductEntry==='function')clearProductEntry(true);
+ if(typeof renderItems==='function')renderItems();
+ showSelection();renderProducts();
+}
+function afterAdd(){
+ if(search)search.value='';
+ showSelection();
+ renderProducts();refreshCounts();
+ // Desktop calculator rhythm: next click or type can choose the next product.
+ if(!matchMedia('(pointer:coarse)').matches)focusSafe(search);
+}
+function startEdit(){
+ if(!entry)return;
+ showSelection();
+ try{entry.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(_){}
+ focusSafe($('qty'));
+ try{$('qty')?.select()}catch(_){}
+}
+function afterReset(){
+ if(search)search.value='';
+ showSelection();renderProducts();refreshCounts();
+}
+function refreshCounts(){
+ if(listCount)listCount.textContent=cart().length+' line'+(cart().length===1?'':'s')+' · Duplicate products allowed';
+}
+function boot(){
+ const host=document.querySelector('.addline');
+ if(!host||$('bbPurchasePicker'))return;
+ entry=host;entry.id='purchaseEntry';entry.classList.add('bb-purchase-entry');entry.hidden=true;
+ const picker=document.createElement('div');picker.id='bbPurchasePicker';picker.className='bb-purchase-picker';
+ picker.innerHTML='<div class="bb-pick-top"><strong>1 · Select a product</strong><small id="bbPurchaseProductCount">Select a supplier first</small></div>'+
+ '<label class="bb-pick-search" aria-label="Search supplier products">'+
+ '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="7.3"></circle><path d="m16.4 16.4 5 5"></path></svg>'+
+ '<input type="search" id="bbPurchaseProductSearch" placeholder="Search products by name or code…" autocomplete="off" aria-label="Search products"></label>'+
+ '<div id="bbPurchaseTiles" class="bb-pick-tiles" role="group" aria-label="Supplier products"></div>';
+ host.before(picker);
+ const strip=document.createElement('div');strip.id='bbPurchaseSelection';strip.className='bb-pick-selection';strip.hidden=true;
+ strip.innerHTML='<div><strong id="bbPurchaseSelectedName"></strong><small id="bbPurchaseSelectedSub" style="display:block;margin-top:3px"></small></div><button type="button" id="bbPurchaseCancel">Cancel</button>';
+ host.before(strip);
+ const helper=document.createElement('div');helper.id='bbPurchaseEditHelp';helper.className='bb-purchase-help';
+ helper.textContent='Same product can be added again as a separate purchase line.';
+ host.after(helper);
+ const table=host.parentElement?.querySelector('.tablewrap');
+ if(table){
+  const header=document.createElement('div');header.className='bb-purchase-list-title';
+  header.innerHTML='<span>2 · Purchase lines</span><span id="bbPurchaseLineCount" class="bb-line-count">0 lines</span>';
+  table.before(header);
+ }
+ search=$('bbPurchaseProductSearch');tiles=$('bbPurchaseTiles');count=$('bbPurchaseProductCount');
+ selection=strip;selectedName=$('bbPurchaseSelectedName');selectedSub=$('bbPurchaseSelectedSub');
+ listCount=$('bbPurchaseLineCount');help=helper;
+ search.addEventListener('input',renderProducts);
+ search.addEventListener('keydown',event=>{
+  if(event.key!=='Enter')return;
+  const visible=tiles.querySelectorAll('button[data-bb-product]');
+  if(visible.length===1){event.preventDefault();choose(visible[0].dataset.bbProduct)}
+ });
+ tiles.addEventListener('click',event=>{
+  const btn=event.target.closest('button[data-bb-product]');
+  if(btn)choose(btn.dataset.bbProduct);
+ });
+ $('bbPurchaseCancel').addEventListener('click',cancelEdit);
+ // Calculator shortcut: Enter on Qty -> Price, Enter on Price -> add/save.
+ $('qty')?.addEventListener('keydown',event=>{
+   if(event.key!=='Enter'||event.isComposing)return;
+   event.preventDefault();focusSafe($('price'));try{$('price')?.select()}catch(_){}
+ });
+ $('price')?.addEventListener('keydown',event=>{
+   if(event.key!=='Enter'||event.isComposing)return;
+   event.preventDefault();$('addBtn')?.click();
+ });
+ $('promotionQty')?.addEventListener('keydown',event=>{
+   if(event.key!=='Enter'||event.isComposing)return;
+   event.preventDefault();focusSafe($('price'));try{$('price')?.select()}catch(_){}
+ });
+ renderProducts();refreshCounts();showSelection();
+}
+const api={renderProducts,showSelection,afterAdd,startEdit,afterReset,refreshCounts};
+window.BBPurchaseCalculatorFlowV1=api;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
 
 <script id="bb-ios-purchase-decimal-v1">
 (function(){
